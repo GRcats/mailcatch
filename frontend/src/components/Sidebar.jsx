@@ -12,10 +12,8 @@ function Sidebar() {
     });
 
     const navigate = useNavigate();
-    const canApprove = ["approver", "finance", "admin"].includes(user?.role)
-        || ["팀장", "과장", "차장", "부서장", "부장", "임원", "이사", "상무", "전무", "대표", "대표이사"].includes(user?.position);
-    const canManagePayments = ["finance", "admin"].includes(user?.role)
-        || ["임원", "이사", "상무", "전무", "대표", "대표이사"].includes(user?.position);
+    const canApprove = ["approver", "finance", "admin"].includes(user?.role);
+    const canManagePayments = ["finance", "admin"].includes(user?.role);
 
     const logout = () => {
 
@@ -182,7 +180,7 @@ function Sidebar() {
 
                     </div>
 
-                    <button
+                    {user?.role === "admin" && <button
                         type="button"
                         onClick={() => navigate("/settings")}
                         title="환경설정"
@@ -200,7 +198,7 @@ function Sidebar() {
                             <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
                             <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06A1.7 1.7 0 0 0 8.97 4.6 1.7 1.7 0 0 0 10 3.04V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
                         </svg>
-                    </button>
+                    </button>}
 
                 </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api, { apiUrl } from "../shared/api";
+import api from "../shared/api";
+import openAuthenticatedFile from "../shared/openAuthenticatedFile";
 import Sidebar from "../components/Sidebar";
 import { jwtDecode } from "jwt-decode";
 
@@ -153,7 +154,7 @@ function DocumentDetail() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => window.open(apiUrl(`/api/documents/${document.id}/attachments/${index}`), "_blank", "noopener,noreferrer")}
+                        onClick={() => openAuthenticatedFile(`/api/documents/${document.id}/attachments/${index}`).catch((requestError) => alert(requestError.response?.data?.message || requestError.message || "첨부파일을 열 수 없습니다."))}
                         className="cursor-pointer rounded-lg border bg-white px-3 py-2 text-sm hover:bg-zinc-100"
                       >
                         열기

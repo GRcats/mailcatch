@@ -253,6 +253,30 @@ const migrations = [
             const [columns] = await db.query("SHOW COLUMNS FROM users LIKE 'admin_allowed_ip'");
             if (!columns.length) await db.query("ALTER TABLE users ADD COLUMN admin_allowed_ip VARCHAR(64) DEFAULT NULL AFTER role");
         }
+    },
+    {
+        version: 14,
+        name: "user-lifecycle-admin-device-and-login-attempts",
+        async up(db) {
+            const additions = [
+                ["admin_device_hash", "VARCHAR(64) DEFAULT NULL AFTER admin_allowed_ip"],
+                ["is_active", "BOOLEAN NOT NULL DEFAULT TRUE AFTER admin_device_hash"],
+                ["deactivated_at", "DATETIME DEFAULT NULL AFTER is_active"],
+                ["deactivated_by", "INT DEFAULT NULL AFTER deactivated_at"]
+            ];
+            for (const [column, definition] of additions) {
+                const [columns] = await db.query(`SHOW COLUMNS FROM users LIKE '${column}'`);
+                if (!columns.length) await db.query(`ALTER TABLE users ADD COLUMN ${column} ${definition}`);
+            }
+            await db.query(`
+                CREATE TABLE IF NOT EXISTS login_attempts (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    ip_address VARCHAR(64) NOT NULL,
+                    attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_login_attempt_ip_time (ip_address, attempted_at)
+                )
+            `);
+        }
     }
 ];
 

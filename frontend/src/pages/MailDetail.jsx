@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api, { apiUrl } from "../shared/api";
+import api from "../shared/api";
+import openAuthenticatedFile from "../shared/openAuthenticatedFile";
 import Sidebar from "../components/Sidebar";
 
 
@@ -185,7 +186,7 @@ function MailDetail(){
                         </span>
                         <button
                           type="button"
-                          onClick={() => window.open(apiUrl(`/api/documents/${document.id}/attachments/${index}`), "_blank", "noopener,noreferrer")}
+                          onClick={() => openAuthenticatedFile(`/api/documents/${document.id}/attachments/${index}`).catch((requestError) => alert(requestError.response?.data?.message || requestError.message || "첨부파일을 열 수 없습니다."))}
                           className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs hover:bg-zinc-50"
                         >
                           열기

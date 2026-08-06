@@ -13,6 +13,7 @@ import CategoryDetail from "./pages/CategoryDetail";
 import Settings from "./pages/Settings";
 import DocumentDetail from "./pages/DocumentDetail";
 import NetworkStatusBanner from "./components/NetworkStatusBanner";
+import AdminRoute from "./components/AdminRoute";
 
 function App() {
   return (
@@ -30,7 +31,7 @@ function App() {
         <Route path="/mail/:id" element={<MailDetail />} />
         <Route path="/category" element={<Category />}/>
         <Route path="/category/:id" element={<CategoryDetail/>} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
       </Routes>
     </BrowserRouter>
   );

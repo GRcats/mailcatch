@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { ImapFlow } = require("imapflow");
 const db = require("../db/database");
 
-const key = () => crypto.createHash("sha256").update(process.env.MAIL_CREDENTIAL_KEY || process.env.JWT_SECRET).digest();
+const key = (secret = process.env.MAIL_CREDENTIAL_KEY) => crypto.createHash("sha256").update(secret).digest();
 
 function createImapClient(config) {
     const client = new ImapFlow({
@@ -30,9 +30,17 @@ function encryptPassword(password) {
 
 function decryptPassword(payload) {
     const value = JSON.parse(payload);
-    const decipher = crypto.createDecipheriv("aes-256-gcm", key(), Buffer.from(value.iv, "base64"));
-    decipher.setAuthTag(Buffer.from(value.tag, "base64"));
-    return Buffer.concat([decipher.update(Buffer.from(value.data, "base64")), decipher.final()]).toString("utf8");
+    const decryptWith = (secret) => {
+        const decipher = crypto.createDecipheriv("aes-256-gcm", key(secret), Buffer.from(value.iv, "base64"));
+        decipher.setAuthTag(Buffer.from(value.tag, "base64"));
+        return Buffer.concat([decipher.update(Buffer.from(value.data, "base64")), decipher.final()]).toString("utf8");
+    };
+    try {
+        return decryptWith(process.env.MAIL_CREDENTIAL_KEY);
+    } catch (error) {
+        if (!process.env.JWT_SECRET || process.env.JWT_SECRET === process.env.MAIL_CREDENTIAL_KEY) throw error;
+        return decryptWith(process.env.JWT_SECRET);
+    }
 }
 
 async function getUserMailConfig(userId) {

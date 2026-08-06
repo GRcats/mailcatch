@@ -3,6 +3,7 @@ import api from "../shared/api";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import MailSettingsModal from "../components/MailSettingsModal";
+import { jwtDecode } from "jwt-decode";
 
 const localDateKey = () => {
   const now = new Date();
@@ -14,6 +15,10 @@ const localDateKey = () => {
 function Mail() {
 
   const navigate = useNavigate();
+  const [user] = useState(() => {
+    const token = localStorage.getItem("token");
+    return token ? jwtDecode(token) : null;
+  });
   const legacyCleanupModalEnabled = Boolean(import.meta.env.VITE_LEGACY_MAIL_CLEANUP_MODAL);
 
   const [mails, setMails] = useState([]);
@@ -253,9 +258,9 @@ function Mail() {
             >
               {refreshing ? "가져오는 중..." : "새로고침"}
             </button>
-            <button type="button" onClick={openCleanup} className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
+            {user?.role === "admin" && <button type="button" onClick={openCleanup} className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
               메일 설정
-            </button>
+            </button>}
           </div>
         </div>
 

@@ -1,4 +1,6 @@
 require("dotenv").config();
+const { validateSecrets } = require("./config/validateSecrets");
+validateSecrets();
 
 const express = require("express");
 const cors = require("cors");

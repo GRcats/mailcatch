@@ -10,7 +10,7 @@ function Settings() {
     const token = localStorage.getItem("token");
     return token ? jwtDecode(token) : null;
   });
-  const isAdmin = user?.role === "admin" || ["대표", "대표이사"].includes(user?.position);
+  const isAdmin = user?.role === "admin";
   const [syncDays, setSyncDays] = useState(() =>
     localStorage.getItem("mailSyncDays") || "30"
   );
@@ -42,6 +42,7 @@ function Settings() {
   const [newUser, setNewUser] = useState({ username: "", password: "", name: "", department: "", position: "", role: "employee" });
   const [userCreating, setUserCreating] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
+  const [adminAccess, setAdminAccess] = useState(null);
   useEffect(() => {
     api.get("/api/settings/approval-workflow")
       .then((res) => setApprovalPositions(res.data.positions || availableApprovalPositions))
@@ -77,8 +78,12 @@ function Settings() {
 
     if (isAdmin) {
       try {
-        const usersResponse = await api.get("/api/settings/users");
+        const [usersResponse, accessResponse] = await Promise.all([
+          api.get("/api/settings/users"),
+          api.get("/api/settings/admin-access")
+        ]);
         setUsers(usersResponse.data.users || []);
+        setAdminAccess(accessResponse.data);
       } catch (error) { console.error(error); }
     }
   }, [isAdmin]);
@@ -106,12 +111,23 @@ function Settings() {
   };
 
   const deleteUser = async (item) => {
-    if (!confirm(`${item.name} (${item.username}) 계정을 삭제하시겠습니까?`)) return;
+    if (!confirm(`${item.name} (${item.username}) 계정을 비활성화하시겠습니까? 기존 문서와 이력은 보존됩니다.`)) return;
     try {
       await api.delete(`/api/settings/users/${item.id}`);
       setUsers((current) => current.filter((userItem) => userItem.id !== item.id));
     } catch (error) {
-      alert(error.response?.data?.message || "계정을 삭제할 수 없습니다.");
+      alert(error.response?.data?.message || "계정을 비활성화할 수 없습니다.");
+    }
+  };
+
+  const rebindAdminAccess = async () => {
+    if (!confirm("현재 IP와 이 브라우저를 관리자 PC로 다시 등록하시겠습니까?")) return;
+    try {
+      const response = await api.put("/api/settings/admin-access/rebind");
+      setAdminAccess(response.data);
+      alert("현재 관리자 PC 정보를 다시 등록했습니다.");
+    } catch (error) {
+      alert(error.response?.data?.message || "관리자 PC 정보를 등록할 수 없습니다.");
     }
   };
 
@@ -421,11 +437,15 @@ function Settings() {
               <div><h3 className="text-xl font-bold">사용자 역할 관리</h3><p className="mt-2 text-zinc-500">업무에 필요한 최소 권한만 지정하세요.</p></div>
               <button type="button" onClick={() => setShowUserForm(true)} className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">계정 추가</button>
             </div>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div><h4 className="font-bold text-amber-900">관리자 PC 인증</h4><p className="mt-1 text-sm text-amber-800">등록 IP: {adminAccess?.allowedIp || "미등록"} · 현재 IP: {adminAccess?.currentIp || "확인 중"}</p><p className="mt-1 text-xs text-amber-700">IP와 이 브라우저의 기기 키를 함께 검사합니다.</p></div>
+              <button type="button" onClick={rebindAdminAccess} className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">현재 PC 재등록</button>
+            </div>
             <div className="mt-5 overflow-x-auto rounded-lg border">
               <table className="w-full min-w-[700px] text-sm">
                 <thead className="bg-zinc-50 text-zinc-500"><tr><th className="px-4 py-3 text-left">사용자</th><th className="px-4 py-3 text-left">부서</th><th className="px-4 py-3 text-left">직급</th><th className="px-4 py-3 text-left">역할</th><th className="px-4 py-3 text-center">관리</th></tr></thead>
                 <tbody>{users.map((item) => (
-                  <tr key={item.id} className="border-t"><td className="px-4 py-3">{item.name} <span className="text-zinc-400">({item.username})</span></td><td className="px-4 py-3">{item.department || "-"}</td><td className="px-4 py-3">{item.position || "-"}</td><td className="px-4 py-3"><select value={item.role} onChange={(event) => updateUserRole(item.id, event.target.value)} disabled={item.role === "admin"} className="rounded-lg border bg-white px-3 py-2 disabled:bg-zinc-100"><option value="employee">일반 사용자</option><option value="approver">결재자</option><option value="finance">지급 담당자</option>{item.role === "admin" && <option value="admin">관리자</option>}</select></td><td className="px-4 py-3 text-center">{item.role === "admin" ? <span className="text-xs text-zinc-400">삭제 불가</span> : <button type="button" onClick={() => deleteUser(item)} className="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50">삭제</button>}</td></tr>
+                  <tr key={item.id} className="border-t"><td className="px-4 py-3">{item.name} <span className="text-zinc-400">({item.username})</span></td><td className="px-4 py-3">{item.department || "-"}</td><td className="px-4 py-3">{item.position || "-"}</td><td className="px-4 py-3"><select value={item.role} onChange={(event) => updateUserRole(item.id, event.target.value)} disabled={item.role === "admin"} className="rounded-lg border bg-white px-3 py-2 disabled:bg-zinc-100"><option value="employee">일반 사용자</option><option value="approver">결재자</option><option value="finance">지급 담당자</option>{item.role === "admin" && <option value="admin">관리자</option>}</select></td><td className="px-4 py-3 text-center">{item.role === "admin" ? <span className="text-xs text-zinc-400">비활성화 불가</span> : <button type="button" onClick={() => deleteUser(item)} className="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50">비활성화</button>}</td></tr>
                 ))}</tbody>
               </table>
             </div>

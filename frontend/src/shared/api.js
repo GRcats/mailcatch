@@ -2,6 +2,16 @@ import axios from "axios";
 
 const STORAGE_KEY = "aproServerUrl";
 const DEFAULT_SERVER_URL = "http://localhost:3000";
+const ADMIN_DEVICE_KEY = "mailcatchAdminDeviceToken";
+
+function getAdminDeviceToken() {
+  let token = localStorage.getItem(ADMIN_DEVICE_KEY);
+  if (!token) {
+    token = crypto.randomUUID();
+    localStorage.setItem(ADMIN_DEVICE_KEY, token);
+  }
+  return token;
+}
 
 export function normalizeServerUrl(value) {
   let url = String(value || "").trim();
@@ -33,6 +43,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  config.headers["X-Admin-Device-Token"] = getAdminDeviceToken();
   return config;
 });
 

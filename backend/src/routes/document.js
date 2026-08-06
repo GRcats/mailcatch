@@ -29,7 +29,7 @@ router.get("/payments", allowRoles("finance", "admin"), getPayments);
 router.post("/payments/export-csv", allowRoles("finance", "admin"), savePaymentHistoryCsv);
 router.post("/attachments/upload", express.raw({ type: "*/*", limit: "25mb" }), uploadDocumentAttachment);
 router.get("/attachment-categories", getGlobalAttachmentCategories);
-router.put("/attachment-categories", updateGlobalAttachmentCategories);
+router.put("/attachment-categories", allowRoles("admin"), updateGlobalAttachmentCategories);
 router.patch("/:id/payment", allowRoles("finance", "admin"), completePayment);
 router.get("/:id/attachments/:index", openDocumentAttachment);
 router.patch("/:id/decision", allowRoles("approver", "admin"), decideDocument);

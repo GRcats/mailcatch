@@ -22,7 +22,7 @@ function Approval() {
     const token = localStorage.getItem("token");
     return token ? jwtDecode(token) : null;
   });
-  const canManageWorkflow = user?.role === "admin" || ["대표", "대표이사"].includes(user?.position);
+  const canManageWorkflow = user?.role === "admin";
 
   const saveApprovalWorkflow = async () => {
     if (!approvalPositions.length) return alert("결재 직급을 하나 이상 선택하세요.");

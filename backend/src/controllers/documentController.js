@@ -893,3 +893,5 @@ function normalizeDocument(document) {
         approvalSteps: parseApprovalSteps(document.approvalSteps, document.requesterPosition)
     };
 }
+
+exports.__test = { paymentAttachmentFileName };

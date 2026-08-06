@@ -27,8 +27,7 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    const canApprove = ["approver", "finance", "admin"].includes(user?.role)
-      || ["팀장", "과장", "차장", "부서장", "부장", "임원", "이사", "상무", "전무", "대표", "대표이사"].includes(user?.position);
+    const canApprove = ["approver", "finance", "admin"].includes(user?.role);
     Promise.all([
       api.get("/api/documents", { params: { scope: "mine" } }),
       canApprove ? api.get("/api/documents/approval/pending") : Promise.resolve({ data: [] })

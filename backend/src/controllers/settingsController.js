@@ -244,7 +244,7 @@ async function createBackup(label = "manual") {
         const [rows] = await db.query(`SELECT * FROM \`${table}\``);
         tables[table] = rows;
     }
-    const encryptionKey = crypto.createHash("sha256").update(process.env.BACKUP_ENCRYPTION_KEY || process.env.JWT_SECRET).digest();
+    const encryptionKey = crypto.createHash("sha256").update(process.env.BACKUP_ENCRYPTION_KEY).digest();
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv("aes-256-gcm", encryptionKey, iv);
     const encrypted = Buffer.concat([cipher.update(JSON.stringify({ version: 2, createdAt: new Date().toISOString(), tables })), cipher.final()]);
@@ -291,7 +291,7 @@ async function verifyBackup(source) {
 async function readBackupDatabase(source) {
     try {
         const metadata = JSON.parse(await fs.readFile(path.join(source, "encryption.json"), "utf8"));
-        const encryptionKey = crypto.createHash("sha256").update(process.env.BACKUP_ENCRYPTION_KEY || process.env.JWT_SECRET).digest();
+        const encryptionKey = crypto.createHash("sha256").update(process.env.BACKUP_ENCRYPTION_KEY).digest();
         const decipher = crypto.createDecipheriv("aes-256-gcm", encryptionKey, Buffer.from(metadata.iv, "base64"));
         decipher.setAuthTag(Buffer.from(metadata.tag, "base64"));
         const decrypted = Buffer.concat([decipher.update(await fs.readFile(path.join(source, "database.enc"))), decipher.final()]);
@@ -619,3 +619,5 @@ exports.cleanupTemporaryUploads = async (req, res) => {
         res.status(500).json({ message: "임시 파일 정리에 실패했습니다." });
     }
 };
+
+exports.__test = { backupIntegrity, verifyBackup, getBackupIntervalHours };

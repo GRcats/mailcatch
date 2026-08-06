@@ -1,5 +1,7 @@
 const db = require("../db/database");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const { normalizeClientIp } = require("../domain/clientIp");
 
 exports.createUser = async (req, res) => {
     const username = String(req.body?.username || "").trim();
@@ -31,7 +33,7 @@ exports.createUser = async (req, res) => {
 };
 
 exports.getUsers = async (req, res) => {
-    const [users] = await db.query("SELECT id, username, name, department, position, role, created_at AS createdAt FROM users ORDER BY department, name");
+    const [users] = await db.query("SELECT id, username, name, department, position, role, created_at AS createdAt FROM users WHERE is_active = TRUE ORDER BY department, name");
     res.json({ users });
 };
 
@@ -61,7 +63,10 @@ exports.deleteUser = async (req, res) => {
         try {
             await connection.beginTransaction();
             await connection.query("DELETE FROM user_mail_accounts WHERE user_id = ?", [userId]);
-            await connection.query("DELETE FROM users WHERE id = ?", [userId]);
+            await connection.query(
+                "UPDATE users SET is_active = FALSE, deactivated_at = CURRENT_TIMESTAMP, deactivated_by = ? WHERE id = ?",
+                [req.user.id, userId]
+            );
             await connection.commit();
         } catch (error) {
             await connection.rollback();
@@ -74,4 +79,18 @@ exports.deleteUser = async (req, res) => {
         console.error(error);
         res.status(500).json({ message: "계정을 삭제할 수 없습니다." });
     }
+};
+
+exports.getAdminAccess = async (req, res) => {
+    const [rows] = await db.query("SELECT admin_allowed_ip AS allowedIp FROM users WHERE id = ?", [req.user.id]);
+    res.json({ allowedIp: rows[0]?.allowedIp || null, currentIp: normalizeClientIp(req.ip || req.socket?.remoteAddress) });
+};
+
+exports.rebindAdminAccess = async (req, res) => {
+    const currentIp = normalizeClientIp(req.ip || req.socket?.remoteAddress);
+    const deviceToken = String(req.headers["x-admin-device-token"] || "");
+    if (!currentIp || !deviceToken) return res.status(400).json({ message: "현재 관리자 PC 정보를 확인할 수 없습니다." });
+    const adminDeviceHash = crypto.createHash("sha256").update(deviceToken).digest("hex");
+    await db.query("UPDATE users SET admin_allowed_ip = ?, admin_device_hash = ? WHERE id = ?", [currentIp, adminDeviceHash, req.user.id]);
+    res.json({ success: true, allowedIp: currentIp, currentIp });
 };
